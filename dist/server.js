@@ -13,23 +13,26 @@ const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3000;
 app.use(express_1.default.json());
 const emailService = new EmailService_1.EmailService([new ProviderA_1.ProviderA(), new ProviderB_1.ProviderB()]);
-app.post("/send-email", async (req, res, next) => {
+// Health check route
+app.get("/", (_, res) => {
+    res.send("✅ Email API is running.");
+});
+// Email sending API
+app.post("/send-email", async (req, res) => {
+    const { id, to, subject, body } = req.body;
+    if (!id || !to || !subject || !body) {
+        res.status(400).json({ error: "Missing required fields" });
+        return;
+    }
     try {
-        const { id, to, subject, body } = req.body;
-        if (!id || !to || !subject || !body) {
-            res.status(400).json({ error: "Missing required fields" });
-            return;
-        }
         const result = await emailService.send({ id, to, subject, body });
         res.json(result);
     }
     catch (error) {
-        next(error);
+        res.status(500).json({ error: "Failed to send email" });
     }
 });
-app.get("/", (_, res) => {
-    res.send("Resilient Email Service is running ✅");
-});
+// Start server
 app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
+    console.log(`🌐 API running on http://localhost:${PORT}`);
 });
