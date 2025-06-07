@@ -8,8 +8,10 @@ class QueueService {
         this.isProcessing = false;
     }
     enqueue(email) {
-        this.queue.push(email);
-        this.processQueue();
+        return new Promise((resolve) => {
+            this.queue.push(email);
+            this.processQueue().then(resolve);
+        });
     }
     async processQueue() {
         if (this.isProcessing)

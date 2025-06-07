@@ -1,4 +1,4 @@
-import express, { Request, Response, NextFunction } from "express";
+import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 import { EmailService } from "./services/EmailService";
 import { ProviderA } from "./providers/ProviderA";
@@ -12,26 +12,29 @@ app.use(express.json());
 
 const emailService = new EmailService([new ProviderA(), new ProviderB()]);
 
-app.post("/send-email", async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+// Health check route
+app.get("/", (_: Request, res: Response) => {
+  res.send("✅ Email API is running.");
+});
+
+// Email sending API
+app.post("/send-email", async (req: Request, res: Response): Promise<void> => {
+  const { id, to, subject, body } = req.body;
+
+  if (!id || !to || !subject || !body) {
+    res.status(400).json({ error: "Missing required fields" });
+    return;
+  }
+
   try {
-    const { id, to, subject, body } = req.body;
-
-    if (!id || !to || !subject || !body) {
-      res.status(400).json({ error: "Missing required fields" });
-      return;
-    }
-
     const result = await emailService.send({ id, to, subject, body });
     res.json(result);
   } catch (error) {
-    next(error);
+    res.status(500).json({ error: "Failed to send email" });
   }
 });
 
-app.get("/", (_, res) => {
-  res.send("Resilient Email Service is running ✅");
-});
-
+// Start server
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`🌐 API running on http://localhost:${PORT}`);
 });

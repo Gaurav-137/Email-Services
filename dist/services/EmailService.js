@@ -12,15 +12,17 @@ class EmailService {
         this.providers = providers;
         this.store = new StatusStore_1.StatusStore();
         this.circuitBreakers = new Map();
-        this.rateLimiter = new RateLimiter_1.RateLimiter(10); // max 10 emails per minute
+        this.rateLimiter = new RateLimiter_1.RateLimiter(10); // 10 requests/min
         for (const provider of providers) {
             this.circuitBreakers.set(provider.name, new CircuitBreaker_1.CircuitBreaker());
         }
     }
     async send(email) {
+        // Idempotency
         if (this.store.exists(email.id)) {
             return this.store.getStatus(email.id);
         }
+        // Rate limiting
         if (!this.rateLimiter.canProceed()) {
             const result = {
                 status: types_1.EmailStatus.FAILED,
@@ -31,6 +33,7 @@ class EmailService {
             Logger_1.Logger.error("Rate limit exceeded for email ID: " + email.id);
             return result;
         }
+        // Try each provider with retries and circuit breaker
         for (const provider of this.providers) {
             const cb = this.circuitBreakers.get(provider.name);
             try {
@@ -52,7 +55,7 @@ class EmailService {
             provider: "None",
             error: "All providers failed",
         };
-        this.store.setStatus(email.id, result);
+        this.store.setStatus(email.id, result); // ✅ FINAL STEP THIS FIXES YOUR ISSUE
         return result;
     }
     getStatus(id) {
