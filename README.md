@@ -1,6 +1,3 @@
-# Email-Services
-PearlThoughts Assginment
-
 # Resilient Email Sending Service (TypeScript)
 
 ## ✅ Features
